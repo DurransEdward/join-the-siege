@@ -1,76 +1,70 @@
 # Heron Coding Challenge - File Classifier
 
-## Overview
+## My Approach
 
-At Heron, we’re using AI to automate document processing workflows in financial services and beyond. Each day, we handle over 100,000 documents that need to be quickly identified and categorised before we can kick off the automations.
+With the time constraint, I decided to implement a quick, but also accurate and robust, solution: send the documents to openAI's `gpt-4o-mini` API to be classified. This model is highly versatile and can be used for a wide range of tasks, including document classification. Setting the `response_format` field in the request guarantees the response will be the required format.
 
-This repository provides a basic endpoint for classifying files by their filenames. However, the current classifier has limitations when it comes to handling poorly named files, processing larger volumes, and adapting to new industries effectively.
+## Running the Code
 
-**Your task**: improve this classifier by adding features and optimisations to handle (1) poorly named files, (2) scaling to new industries, and (3) processing larger volumes of documents.
-
-This is a real-world challenge that allows you to demonstrate your approach to building innovative and scalable AI solutions. We’re excited to see what you come up with! Feel free to take it in any direction you like, but we suggest:
-
-
-### Part 1: Enhancing the Classifier
-
-- What are the limitations in the current classifier that's stopping it from scaling?
-- How might you extend the classifier with additional technologies, capabilities, or features?
-
-
-### Part 2: Productionising the Classifier 
-
-- How can you ensure the classifier is robust and reliable in a production environment?
-- How can you deploy the classifier to make it accessible to other services and users?
-
-We encourage you to be creative! Feel free to use any libraries, tools, services, models or frameworks of your choice
-
-### Possible Ideas / Suggestions
-- Train a classifier to categorize files based on the text content of a file
-- Generate synthetic data to train the classifier on documents from different industries
-- Detect file type and handle other file formats (e.g., Word, Excel)
-- Set up a CI/CD pipeline for automatic testing and deployment
-- Refactor the codebase to make it more maintainable and scalable
-
-## Marking Criteria
-- **Functionality**: Does the classifier work as expected?
-- **Scalability**: Can the classifier scale to new industries and higher volumes?
-- **Maintainability**: Is the codebase well-structured and easy to maintain?
-- **Creativity**: Are there any innovative or creative solutions to the problem?
-- **Testing**: Are there tests to validate the service's functionality?
-- **Deployment**: Is the classifier ready for deployment in a production environment?
-
-
-## Getting Started
 1. Clone the repository:
     ```shell
     git clone <repository_url>
-    cd heron_classifier
+    cd join-the-siege
     ```
 
-2. Install dependencies:
+2. Create virtual environment and install dependencies:
     ```shell
     python -m venv venv
     source venv/bin/activate
     pip install -r requirements.txt
+    brew install poppler
     ```
 
-3. Run the Flask app:
+3. Create a `.env` file in the root directory of the project with the following content:
+    ```shell
+    OPENAI_API_KEY='your-openai-api-key'
+    ```
+    Go to https://platform.openai.com to make an OpenAI account and create an API key.
+
+4. Run the Flask app:
     ```shell
     python -m src.app
     ```
 
-4. Test the classifier using a tool like curl:
+5. Test the classifier using curl:
     ```shell
     curl -X POST -F 'file=@path_to_pdf.pdf' http://127.0.0.1:5000/classify_file
     ```
 
-5. Run tests:
+6. Run tests:
    ```shell
     pytest
     ```
 
-## Submission
+## Test Results
 
-Please aim to spend 3 hours on this challenge.
+The classifier correctly classifies all the documents in the `tests/test_data/files` directory. This directory includes a variety of content types: PDFs, JPEGs, PNGs, and a variety of document classes: bank statements, invoices, drivers licences, resumes, and a photograph of a cat (which the classifier correctly identifies as an `unknown file` since it isn't a document). This directory also includes a file with a deliberately named with a misleading name (invoice_5.pdf when the document is actually a bank statement), the classifier correctly classifies this document nonetheless.
 
-Once completed, submit your solution by sharing a link to your forked repository. Please also provide a brief write-up of your ideas, approach, and any instructions needed to run your solution. 
+## Scalability
+
+Since the `gpt-4o-mini` is extremely versatile, the current classifier is highly scalable to new industries and new document classes. For example, if you wanted the classifier to be able to classify receipts, you can simply add `receipts` to the `DOCUMENT_CLASSES` list in `src/config.py`.
+
+Moreover, using OpenAI's `gpt-4o-mini` model, the current classifier is highly scalable in terms of cost. Each request uses ~1000 tokens (https://platform.openai.com/docs/guides/vision#calculating-costs) and it costs just $0.15 per 1,000,000 tokens (https://openai.com/api/pricing). This means that it costs approximately just $0.15 per 1000 requests.
+
+## Limitations and Weaknesses (Areas for Improvement)
+
+Currently, the classifier is only able to handle JPEG, PNG, and PDF files. This is because the OpenAI API only accepts PNGs, JPEGs and static GIFs (and the conversion from PDF to JPEG is very simple). With more time, I would have added support for more file types by converting them to PNGs or JPEGs before sending them to the API.
+
+Since the classifier relies on a third party API, it is vulnerable to failure if that API goes down or malfunctions. This could be mitigated by implementing a fallback classifier. Alternatively, if requests do not need to be handled quickly, they could be sent to a queue which will be processed when the API is up and working properly.
+
+## Running in Production
+
+Suggestions for running the code in production:
+
+- Run the app on a cloud server with built-in horizontal scaling, such as AWS Elastic Beanstalk. This will allow the app to automatically scale up or down based on the number of requests.
+- Consider changing the request router framework from Flask to a request router framework which can handle multiple requests asynchronously, such as Quart. This will allow the app to handle more requests at the same time, improving performance.
+- Set up GitHub Actions to automatically run tests on every push to the repository.
+
+## Final Comments
+
+With more time, I would have liked to have built my own classifier by fine tuning an existing open-source image recognition model, probably from the transformers library. My choice to use the OpenAI API was to meet the time constraint.
